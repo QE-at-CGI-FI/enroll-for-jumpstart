@@ -1,0 +1,407 @@
+/* CSS Variables using CGI brand colors */
+:root {
+    --dark-purple: #200A58;
+    --cgi-purple: #5236AB;
+    --purple-vivid: #9E83F5;
+    --purple-medium: #CBC3E6;
+    --purple-lighter-light: #E6E3F3;
+    --purple-lightest-light: #F2F1F9;
+    
+    --action-link-text-color: #151515;
+    --default-link-text-color: #333333;
+    --dark-gray: #A8A8A8;
+    --action-link-bg: #E8E8E8;
+    --gray-hero: #EFEFEF;
+    --gray-bg: #F8F8F8;
+    
+    --success: #1AB977;
+    --warning: #FFAC25;
+    --error: #B00020;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--default-link-text-color);
+    background-color: var(--gray-bg);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, var(--dark-purple), var(--cgi-purple));
+    color: white;
+    padding: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.logo-section {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.cgi-logo {
+    background: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cgi-logo:hover {
+    background: #f8f8f8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.cgi-logo img {
+    height: 40px;
+    width: auto;
+    filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+    transition: filter 0.3s ease;
+}
+
+/* Remove the old text-based logo styles */
+.logo-text {
+    display: none;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.workshop-details {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.details-left {
+    align-self: center;
+}
+
+.details-left p {
+    margin: 5px 0;
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.details-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.description-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.privacy-section,
+.cancellation-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.details-right h3 {
+    margin: 0 0 6px 0;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.description-section h3 {
+    font-size: 1.1em;
+}
+
+.privacy-section h3,
+.cancellation-section h3 {
+    font-size: 0.95em;
+}
+
+.details-right p {
+    margin: 0;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.description-section p {
+    font-size: 0.95em;
+}
+
+.privacy-section p,
+.cancellation-section p {
+    font-size: 0.85em;
+}
+
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.enrollment-form {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid var(--cgi-purple);
+}
+
+.enrollment-form h2 {
+    color: var(--dark-purple);
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--action-link-text-color);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--purple-medium);
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--cgi-purple);
+    box-shadow: 0 0 0 3px rgba(82, 54, 171, 0.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--cgi-purple), var(--purple-vivid));
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(82, 54, 171, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.message {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.message.success {
+    background-color: var(--success);
+    color: white;
+}
+
+.message.error {
+    background-color: var(--error);
+    color: white;
+}
+
+.message.warning {
+    background-color: var(--warning);
+    color: var(--action-link-text-color);
+}
+
+.participants-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.enrolled-participants,
+.queued-participants {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.enrolled-participants {
+    border-left: 4px solid var(--success);
+}
+
+.queued-participants {
+    border-left: 4px solid var(--warning);
+}
+
+.enrolled-participants h3,
+.queued-participants h3 {
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    color: var(--dark-purple);
+}
+
+.participant-list {
+    list-style: none;
+    min-height: 60px;
+}
+
+.participant-list li {
+    background: var(--purple-lightest-light);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border-left: 3px solid var(--purple-medium);
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.participant-list li:hover {
+    background: var(--purple-lighter-light);
+}
+
+.participant-list:empty::after {
+    content: "No participants yet";
+    color: var(--dark-gray);
+    font-style: italic;
+    display: block;
+    text-align: center;
+    padding: 20px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    color: var(--dark-gray);
+    border-top: 1px solid var(--purple-medium);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    header {
+        padding: 30px 15px;
+    }
+    
+    .logo-section {
+        position: static;
+        margin-bottom: 20px;
+    }
+    
+    .cgi-logo {
+        display: inline-block;
+        margin: 0 auto;
+    }
+    
+    .logo-text {
+        display: none;
+    }
+    
+    .cgi-logo img {
+        height: 35px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .participants-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .workshop-details {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .details-left p {
+        font-size: 1em;
+    }
+    
+    .details-right {
+        gap: 10px;
+    }
+    
+    .details-right h3 {
+        font-size: 0.95em;
+    }
+    
+    .description-section h3 {
+        font-size: 1em;
+    }
+    
+    .privacy-section h3,
+    .cancellation-section h3 {
+        font-size: 0.9em;
+    }
+    
+    .details-right p {
+        font-size: 0.85em;
+    }
+    
+    .privacy-section p,
+    .cancellation-section p {
+        font-size: 0.8em;
+    }
+}
+
+/* Animation for new participants */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.participant-list li.new-participant {
+    animation: slideIn 0.5s ease-out;
+}

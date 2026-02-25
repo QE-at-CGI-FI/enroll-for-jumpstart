@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dev Jumpstart Workshop - Enrollment</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-section">
+                <div class="cgi-logo">
+                    <img src="logo.svg" alt="CGI Logo">
+                </div>
+            </div>
+            <h1>AI Dev Jumpstart Workshop</h1>
+            <div class="workshop-details">
+                <div class="details-left">
+                    <p><strong>Date:</strong> March 11, 2026</p>
+                    <p><strong>Time:</strong> 13:00 - 16:00</p>
+                    <p><strong>Format:</strong> Online</p>
+                    <p><strong>Capacity:</strong> 8 participants</p>
+                </div>
+                <div class="details-right">
+                    <div class="description-section">
+                        <h3>Description</h3>
+                        <p>BCS Special! Ensemble programming with GitHub Copilot Agentic features. Your dev colleagues may have experiences to share. Come learn together and build something out of inspiration.</p>
+                    </div>
+                    <div class="privacy-section">
+                        <h3>Privacy Notice</h3>
+                        <p>Your name will be displayed on the participant list for event organization. All participant data will be permanently deleted after the workshop concludes.</p>
+                    </div>
+                    <div class="cancellation-section">
+                        <h3>Cancellation Policy</h3>
+                        <p>If you need to cancel, contact Maaret Pyhäjärvi.</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="enrollment-form">
+                <h2>Enroll for the Workshop</h2>
+                <form id="enrollmentForm">
+                    <div class="form-group">
+                        <label for="participantName">Full Name</label>
+                        <input type="text" id="participantName" name="participantName" required 
+                               placeholder="Enter your full name">
+                    </div>
+                    <button type="submit" class="btn-primary">Enroll Now</button>
+                </form>
+                <div id="enrollmentMessage" class="message"></div>
+            </section>
+
+            <div class="participants-section">
+                <div class="enrolled-participants">
+                    <h3>Enrolled Participants (<span id="enrolledCount">0</span>/8)</h3>
+                    <ul id="enrolledList" class="participant-list">
+                        <!-- Enrolled participants will be displayed here -->
+                    </ul>
+                </div>
+
+                <div class="queued-participants">
+                    <h3>Queue (<span id="queueCount">0</span>)</h3>
+                    <ul id="queuedList" class="participant-list">
+                        <!-- Queued participants will be displayed here -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2026 CGI - AI Dev Jumpstart Workshop</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
