@@ -23,17 +23,28 @@ class SupabaseClient {
                 .eq('workshop_id', 'ai-dev-jumpstart-2026')
                 .eq('status', 'enrolled');
 
+            // Convert session-based object to flat array with session info
+            const allParticipants = [];
+            Object.keys(participants).forEach(sessionId => {
+                if (Array.isArray(participants[sessionId])) {
+                    participants[sessionId].forEach(p => {
+                        allParticipants.push({
+                            workshop_id: 'ai-dev-jumpstart-2026',
+                            name: p.name,
+                            status: 'enrolled',
+                            timestamp: p.timestamp,
+                            participant_id: p.id,
+                            session_id: p.session || sessionId
+                        });
+                    });
+                }
+            });
+
             // Insert new enrolled participants
-            if (participants.length > 0) {
+            if (allParticipants.length > 0) {
                 const { data, error } = await this.client
                     .from('participants')
-                    .insert(participants.map(p => ({
-                        workshop_id: 'ai-dev-jumpstart-2026',
-                        name: p.name,
-                        status: 'enrolled',
-                        timestamp: p.timestamp,
-                        participant_id: p.id
-                    })));
+                    .insert(allParticipants);
 
                 if (error) throw error;
             }
@@ -55,17 +66,28 @@ class SupabaseClient {
                 .eq('workshop_id', 'ai-dev-jumpstart-2026')
                 .eq('status', 'queued');
 
+            // Convert session-based object to flat array with session info
+            const allParticipants = [];
+            Object.keys(participants).forEach(sessionId => {
+                if (Array.isArray(participants[sessionId])) {
+                    participants[sessionId].forEach(p => {
+                        allParticipants.push({
+                            workshop_id: 'ai-dev-jumpstart-2026',
+                            name: p.name,
+                            status: 'queued',
+                            timestamp: p.timestamp,
+                            participant_id: p.id,
+                            session_id: p.session || sessionId
+                        });
+                    });
+                }
+            });
+
             // Insert new queued participants
-            if (participants.length > 0) {
+            if (allParticipants.length > 0) {
                 const { data, error } = await this.client
                     .from('participants')
-                    .insert(participants.map(p => ({
-                        workshop_id: 'ai-dev-jumpstart-2026',
-                        name: p.name,
-                        status: 'queued',
-                        timestamp: p.timestamp,
-                        participant_id: p.id
-                    })));
+                    .insert(allParticipants);
 
                 if (error) throw error;
             }
@@ -88,16 +110,37 @@ class SupabaseClient {
 
             if (error) throw error;
 
-            const enrolled = data
-                .filter(p => p.status === 'enrolled')
-                .map(p => ({
+            // Group participants by session and status
+            const enrolled = { session1: [], session2: [] };
+            const queued = { session1: [], session2: [] };
+
+            data.forEach(p => {
+                const participant = {
                     name: p.name,
                     timestamp: p.timestamp,
-                    id: p.participant_id
-                }));
+                    id: p.participant_id,
+                    session: p.session_id || 'session1' // Default to session1 for legacy data
+                };
 
-            const queued = data
-                .filter(p => p.status === 'queued')
+                const sessionId = p.session_id || 'session1';
+                
+                if (p.status === 'enrolled') {
+                    if (enrolled[sessionId]) {
+                        enrolled[sessionId].push(participant);
+                    }
+                } else if (p.status === 'queued') {
+                    if (queued[sessionId]) {
+                        queued[sessionId].push(participant);
+                    }
+                }
+            });
+
+            return { enrolled, queued };
+        } catch (error) {
+            console.error('Error loading participants:', error);
+            throw error;
+        }
+    }
                 .map(p => ({
                     name: p.name,
                     timestamp: p.timestamp,
