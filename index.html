@@ -22,9 +22,9 @@
             <h1>AI Dev Jumpstart Workshop</h1>
             <div class="workshop-details">
                 <div class="details-left">
-                    <p><strong>Date:</strong> March 11, 2026</p>
-                    <p><strong>Time:</strong> 13:00 - 15:00</p>
-                    <p><strong>Format:</strong> Online</p>
+                    <p><strong>Date:</strong> <span id="sessionDate">March 11, 2026</span></p>
+                    <p><strong>Time:</strong> <span id="sessionTime">13:00 - 15:00</span></p>
+                    <p><strong>Location:</strong> <span id="sessionLocation">Online</span></p>
                     <p><strong>Capacity:</strong> 8 participants</p>
                 </div>
                 <div class="details-right">
@@ -48,6 +48,13 @@
             <section class="enrollment-form">
                 <h2>Enroll for the Workshop</h2>
                 <form id="enrollmentForm">
+                    <div class="form-group">
+                        <label for="sessionSelect">Select Session</label>
+                        <select id="sessionSelect" name="sessionSelect" required>
+                            <option value="session1">March 11, 2026 - 13:00-15:00 (Online)</option>
+                            <option value="session2">March 26, 2026 - 13:30-15:30 (Karvaamokuja)</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="participantName">Full Name</label>
                         <input type="text" id="participantName" name="participantName" required 

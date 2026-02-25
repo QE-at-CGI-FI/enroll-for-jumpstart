@@ -194,7 +194,8 @@ main {
     color: var(--action-link-text-color);
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 12px;
     border: 2px solid var(--purple-medium);
@@ -203,7 +204,8 @@ main {
     transition: border-color 0.3s ease;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--cgi-purple);
     box-shadow: 0 0 0 3px rgba(82, 54, 171, 0.1);
