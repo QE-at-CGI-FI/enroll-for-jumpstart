@@ -5,7 +5,7 @@ Enrollment site for AI Dev Jumpstart workshop. A simple, elegant web application
 ## Workshop Details
 
 - **Date:** March 11, 2026
-- **Time:** 13:00 - 16:00
+- **Time:** 13:00 - 17:00
 - **Format:** Online
 - **Capacity:** 8 participants (additional enrollments go to queue)
 
