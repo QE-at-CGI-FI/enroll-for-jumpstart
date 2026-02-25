@@ -255,6 +255,50 @@ main {
     color: var(--action-link-text-color);
 }
 
+.sync-status {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.sync-status.connected {
+    background: rgba(26, 185, 119, 0.1);
+    color: var(--success);
+    border-color: var(--success);
+}
+
+.sync-status.disconnected {
+    background: rgba(176, 0, 32, 0.1);
+    color: var(--error);
+    border-color: var(--error);
+}
+
+.sync-status.syncing {
+    background: rgba(255, 172, 37, 0.1);
+    color: var(--warning);
+    border-color: var(--warning);
+}
+
+#syncStatusIcon {
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.sync-status.syncing #syncStatusIcon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .participants-section {
     display: grid;
     grid-template-columns: 1fr 1fr;

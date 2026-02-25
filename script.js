@@ -7,6 +7,9 @@ class WorkshopEnrollment {
         this.supabaseClient = null;
         this.isDatabaseConnected = false;
         this.currentSession = 'session1'; // Default session
+        this.syncRequired = false; // Track if localStorage data needs syncing
+        this.retryAttempts = 0;
+        this.maxRetryAttempts = 3;
         
         // Session definitions
         this.sessions = {
@@ -48,10 +51,15 @@ class WorkshopEnrollment {
                 console.log('✅ Database connection successful');
                 // Load data from Supabase
                 await this.loadFromDatabase();
+                // Check if we need to sync localStorage data to database
+                await this.syncLocalStorageToDatabase();
             } else {
                 console.warn('⚠️  Database connection failed, using localStorage fallback');
                 console.warn('Connection error:', connectionTest.error);
                 this.loadFromStorage();
+                this.syncRequired = true;
+                // Try to reconnect periodically
+                this.scheduleReconnectAttempt();
             }
             
         } catch (error) {
@@ -62,6 +70,7 @@ class WorkshopEnrollment {
         
         this.initializeEventListeners();
         this.updateUI();
+        this.updateSyncStatus();
     }
 
     async loadFromDatabase() {
@@ -179,6 +188,38 @@ class WorkshopEnrollment {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    updateSyncStatus() {
+        const syncStatusElement = document.getElementById('syncStatus');
+        const syncStatusIcon = document.getElementById('syncStatusIcon');
+        const syncStatusText = document.getElementById('syncStatusText');
+        
+        if (!syncStatusElement) return; // Element not found
+        
+        // Remove all status classes
+        syncStatusElement.classList.remove('connected', 'disconnected', 'syncing');
+        
+        if (this.isDatabaseConnected) {
+            if (this.syncRequired) {
+                syncStatusElement.classList.add('syncing');
+                syncStatusIcon.textContent = '🔄';
+                syncStatusText.textContent = 'Syncing to database...';
+            } else {
+                syncStatusElement.classList.add('connected');
+                syncStatusIcon.textContent = '🟢';
+                syncStatusText.textContent = 'Connected to database';
+            }
+        } else {
+            syncStatusElement.classList.add('disconnected');
+            if (this.syncRequired) {
+                syncStatusIcon.textContent = '📱';
+                syncStatusText.textContent = 'Offline - data saved locally';
+            } else {
+                syncStatusIcon.textContent = '🔴';
+                syncStatusText.textContent = 'Database disconnected';
+            }
+        }
+    }
+
     updateUI() {
         const currentEnrolled = this.enrolledParticipants[this.currentSession] || [];
         const currentQueued = this.queuedParticipants[this.currentSession] || [];
@@ -237,10 +278,33 @@ class WorkshopEnrollment {
                 await this.supabaseClient.saveEnrolledParticipants(this.enrolledParticipants);
                 await this.supabaseClient.saveQueuedParticipants(this.queuedParticipants);
                 console.log('💾 Data saved to database successfully');
+                this.syncRequired = false;
+                this.retryAttempts = 0;
+                this.updateSyncStatus();
+                return true;
             } catch (error) {
                 console.error('❌ Failed to save to database:', error);
-                this.showMessage('Warning: Data saved locally but database sync failed', 'warning');
+                this.syncRequired = true;
+                this.isDatabaseConnected = false;
+                
+                // Try to retry with exponential backoff
+                if (this.retryAttempts < this.maxRetryAttempts) {
+                    this.retryAttempts++;
+                    console.log(`🔄 Retrying database save (attempt ${this.retryAttempts}/${this.maxRetryAttempts})...`);
+                    setTimeout(() => this.retryDatabaseSave(), Math.pow(2, this.retryAttempts) * 1000);
+                    this.showMessage('Connection issue - retrying database save...', 'warning');
+                } else {
+                    this.showMessage('❌ Database unavailable - data saved locally only. Will sync when connection restored.', 'error');
+                    this.scheduleReconnectAttempt();
+                }
+                this.updateSyncStatus();
+                return false;
             }
+        } else {
+            this.syncRequired = true;
+            this.showMessage('📱 Data saved locally - will sync to database when connected', 'warning');
+            this.updateSyncStatus();
+            return false;
         }
     }
 
@@ -305,11 +369,150 @@ class WorkshopEnrollment {
             if (!this.enrolledParticipants.session2) this.enrolledParticipants.session2 = [];
             if (!this.queuedParticipants.session1) this.queuedParticipants.session1 = [];
             if (!this.queuedParticipants.session2) this.queuedParticipants.session2 = [];
+            
+            // Check if we have local data that might need syncing
+            const hasLocalData = Object.values(this.enrolledParticipants).some(arr => arr.length > 0) || 
+                               Object.values(this.queuedParticipants).some(arr => arr.length > 0);
+            if (hasLocalData && !this.isDatabaseConnected) {
+                this.syncRequired = true;
+                console.log('📱 Local enrollment data detected - will sync to database when connected');
+            }
         } catch (error) {
             console.error('Error loading from localStorage:', error);
             this.enrolledParticipants = { session1: [], session2: [] };
             this.queuedParticipants = { session1: [], session2: [] };
         }
+    }
+
+    async retryDatabaseSave() {
+        if (!this.isDatabaseConnected && this.supabaseClient) {
+            // Test connection before retry
+            const connectionTest = await this.supabaseClient.testConnection();
+            this.isDatabaseConnected = connectionTest.connected;
+        }
+        
+        if (this.isDatabaseConnected) {
+            console.log('🔄 Connection restored, attempting database save...');
+            this.updateSyncStatus();
+            await this.saveToDatabase();
+        }
+    }
+
+    scheduleReconnectAttempt() {
+        // Try to reconnect every 30 seconds if we have unsaved data
+        if (this.syncRequired) {
+            setTimeout(async () => {
+                if (this.supabaseClient) {
+                    const connectionTest = await this.supabaseClient.testConnection();
+                    if (connectionTest.connected && !this.isDatabaseConnected) {
+                        this.isDatabaseConnected = true;
+                        console.log('🔄 Database connection restored');
+                        this.updateSyncStatus();
+                        await this.syncLocalStorageToDatabase();
+                    } else if (this.syncRequired) {
+                        // Keep trying if we still have unsaved data
+                        this.scheduleReconnectAttempt();
+                    }
+                }
+            }, 30000); // 30 seconds
+        }
+    }
+
+    async syncLocalStorageToDatabase() {
+        if (!this.isDatabaseConnected || !this.syncRequired) {
+            return false;
+        }
+
+        console.log('🔄 Syncing localStorage data to database...');
+        
+        try {
+            // Load what's currently in the database
+            const dbData = await this.supabaseClient.loadParticipants();
+            
+            // Compare with localStorage and merge
+            let needsSync = false;
+            
+            // Check each session for differences
+            for (const sessionId of ['session1', 'session2']) {
+                const localEnrolled = this.enrolledParticipants[sessionId] || [];
+                const localQueued = this.queuedParticipants[sessionId] || [];
+                const dbEnrolled = dbData.enrolled[sessionId] || [];
+                const dbQueued = dbData.queued[sessionId] || [];
+                
+                // Simple comparison - if counts differ or participants differ, we need to sync
+                if (localEnrolled.length !== dbEnrolled.length || 
+                    localQueued.length !== dbQueued.length ||
+                    !this.arraysEqual(localEnrolled, dbEnrolled) ||
+                    !this.arraysEqual(localQueued, dbQueued)) {
+                    needsSync = true;
+                    break;
+                }
+            }
+            
+            if (needsSync) {
+                // Merge the data (localStorage takes precedence for newer entries)
+                await this.supabaseClient.saveEnrolledParticipants(this.enrolledParticipants);
+                await this.supabaseClient.saveQueuedParticipants(this.queuedParticipants);
+                console.log('✅ Successfully synced localStorage data to database');
+                this.showMessage('📡 Local data synchronized to database successfully', 'success');
+                this.syncRequired = false;
+                this.updateSyncStatus();
+                return true;
+            } else {
+                console.log('ℹ️ No sync needed - data already matches');
+                this.syncRequired = false;
+                this.updateSyncStatus();
+                return true;
+            }
+        } catch (error) {
+            console.error('❌ Failed to sync localStorage to database:', error);
+            this.showMessage('❌ Failed to sync data to database', 'error');
+            return false;
+        }
+    }
+
+    arraysEqual(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        return arr1.every(item1 => 
+            arr2.some(item2 => 
+                item1.name === item2.name && 
+                item1.session === item2.session
+            )
+        );
+    }
+
+    // Admin function to force sync localStorage to database
+    async forceSyncToDatabase() {
+        if (!this.isDatabaseConnected) {
+            const connectionTest = await this.supabaseClient.testConnection();
+            this.isDatabaseConnected = connectionTest.connected;
+        }
+        
+        if (this.isDatabaseConnected) {
+            this.syncRequired = true; // Force sync even if not marked as required
+            const result = await this.syncLocalStorageToDatabase();
+            if (result) {
+                console.log('🔄 Force sync completed successfully');
+                return { success: true, message: 'Data synchronized to database' };
+            } else {
+                console.log('❌ Force sync failed');
+                return { success: false, message: 'Sync to database failed' };
+            }
+        } else {
+            console.log('❌ Cannot sync - database not connected');
+            return { success: false, message: 'Database not connected' };
+        }
+    }
+
+    // Enhanced status method for debugging
+    getSyncStatus() {
+        return {
+            isDatabaseConnected: this.isDatabaseConnected,
+            syncRequired: this.syncRequired,
+            retryAttempts: this.retryAttempts,
+            enrolledCount: Object.values(this.enrolledParticipants).reduce((sum, arr) => sum + arr.length, 0),
+            queuedCount: Object.values(this.queuedParticipants).reduce((sum, arr) => sum + arr.length, 0)
+        };
     }
 }
 
@@ -339,6 +542,11 @@ console.log(`
 Admin commands available in console:
 - workshopEnrollment.clearAllData() - Clear all data
 - workshopEnrollment.exportData() - Export current data
+- workshopEnrollment.forceSyncToDatabase() - Force sync localStorage to database
+- workshopEnrollment.getSyncStatus() - Check sync and connection status
 - workshopEnrollment.enrolledParticipants - View enrolled participants
 - workshopEnrollment.queuedParticipants - View queued participants
+
+Database Status: ${window.workshopEnrollment ? (window.workshopEnrollment.isDatabaseConnected ? '🟢 Connected' : '🔴 Disconnected') : '⏳ Initializing...'}
+Sync Required: ${window.workshopEnrollment ? (window.workshopEnrollment.syncRequired ? '🟡 Yes' : '🟢 No') : '⏳ Checking...'}
 `);
