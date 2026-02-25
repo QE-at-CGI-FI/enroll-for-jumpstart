@@ -57,17 +57,17 @@ class WorkshopEnrollment {
             
             if (this.isDatabaseConnected) {
                 console.log('✅ Database connection successful');
-                // Load data from Supabase
+                // Load data from Supabase and overwrite localStorage
                 await this.loadFromDatabase();
-                // Check if we need to sync localStorage data to database
-                await this.syncLocalStorageToDatabase();
             } else {
                 console.warn('⚠️  Database connection failed, using localStorage fallback');
                 console.warn('Connection error:', connectionTest.error);
                 this.loadFromStorage();
                 this.syncRequired = true;
-                // Try to reconnect periodically
+                // Try to reconnect and sync immediately
                 this.scheduleReconnectAttempt();
+                // Also try immediate sync in case connection comes back quickly
+                setTimeout(() => this.attemptDatabaseSync(), 1000);
             }
             
         } catch (error) {
@@ -75,11 +75,13 @@ class WorkshopEnrollment {
             console.error('❌ Error stack:', error.stack);
             this.isDatabaseConnected = false;
             this.loadFromStorage();
+            this.syncRequired = true; // Mark for sync when connection is restored
+            // Try to reconnect and sync immediately
+            setTimeout(() => this.attemptDatabaseSync(), 2000);
         }
         
         this.initializeEventListeners();
         this.updateUI();
-        this.updateSyncStatus();
     }
 
     async loadFromDatabase() {
@@ -100,9 +102,21 @@ class WorkshopEnrollment {
             const totalEnrolled = (this.enrolledParticipants.session1?.length || 0) + (this.enrolledParticipants.session2?.length || 0);
             const totalQueued = (this.queuedParticipants.session1?.length || 0) + (this.queuedParticipants.session2?.length || 0);
             console.log(`📊 Loaded ${totalEnrolled} enrolled and ${totalQueued} queued participants from database`);
+            
+            // Always overwrite localStorage with database contents (including empty state)
+            this.saveToStorage();
+            if (totalEnrolled === 0 && totalQueued === 0) {
+                console.log('🧹 Database is empty - local storage cleared to match');
+            } else {
+                console.log('💾 Overwrote localStorage with database contents');
+            }
+            
+            this.syncRequired = false;
+            return true;
         } catch (error) {
             console.error('Error loading from database:', error);
             this.loadFromStorage();
+            return false;
         }
     }
 
@@ -114,8 +128,41 @@ class WorkshopEnrollment {
         const sessionSelect = document.getElementById('sessionSelect');
         sessionSelect.addEventListener('change', (e) => this.handleSessionChange(e));
         
+        // Add manual sync capability (Ctrl+R or Cmd+R when focused on page)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                this.forceDatabaseSync();
+            }
+        });
+        
         // Initialize with default session
         this.updateSessionDetails();
+    }
+
+    async forceDatabaseSync() {
+        console.log('🔄 Manual database sync requested...');
+        this.showMessage('Syncing with database...', 'info');
+        
+        const syncSuccess = await this.attemptDatabaseSync();
+        
+        // Clear any existing info messages
+        const messageElement = document.getElementById('enrollmentMessage');
+        messageElement.textContent = '';
+        messageElement.className = 'message';
+        messageElement.style.cssText = 'display: none;';
+        
+        if (!syncSuccess) {
+            this.showMessage('Failed to sync with database - using local data', 'warning');
+        }
+    }
+
+    clearLocalStorage() {
+        console.log('🗑️ Clearing local storage to match empty database');
+        this.enrolledParticipants = { session1: [], session2: [] };
+        this.queuedParticipants = { session1: [], session2: [] };
+        this.saveToStorage();
+        this.updateUI();
     }
 
     handleSessionChange(event) {
@@ -141,6 +188,37 @@ class WorkshopEnrollment {
         if (!this.validateName(participantName)) {
             this.showMessage('Please enter a valid name (at least 2 characters)', 'error');
             return;
+        }
+
+        // Always refresh database contents first
+        if (this.isDatabaseConnected && this.supabaseClient) {
+            try {
+                await this.loadFromDatabase();
+                this.updateUI();
+            } catch (error) {
+                console.error('Failed to refresh from database:', error);
+                this.showMessage('Failed to refresh data from database', 'error');
+                return;
+            }
+        }
+
+        // Check if the name already exists in the database (new requirement)
+        if (this.isDatabaseConnected && this.supabaseClient) {
+            try {
+                const existsCheck = await this.supabaseClient.checkParticipantExists(participantName);
+                if (existsCheck.error) {
+                    this.showMessage('Error checking participant database', 'error');
+                    return;
+                }
+                if (existsCheck.exists) {
+                    this.showMessage('You have already enrolled. Only one session per person.', 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('Failed to check participant existence:', error);
+                this.showMessage('Failed to verify participant in database', 'error');
+                return;
+            }
         }
 
         // Check for duplicates in current session
@@ -197,38 +275,6 @@ class WorkshopEnrollment {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
-    updateSyncStatus() {
-        const syncStatusElement = document.getElementById('syncStatus');
-        const syncStatusIcon = document.getElementById('syncStatusIcon');
-        const syncStatusText = document.getElementById('syncStatusText');
-        
-        if (!syncStatusElement) return; // Element not found
-        
-        // Remove all status classes
-        syncStatusElement.classList.remove('connected', 'disconnected', 'syncing');
-        
-        if (this.isDatabaseConnected) {
-            if (this.syncRequired) {
-                syncStatusElement.classList.add('syncing');
-                syncStatusIcon.textContent = '🔄';
-                syncStatusText.textContent = 'Syncing to database...';
-            } else {
-                syncStatusElement.classList.add('connected');
-                syncStatusIcon.textContent = '🟢';
-                syncStatusText.textContent = 'Connected to database';
-            }
-        } else {
-            syncStatusElement.classList.add('disconnected');
-            if (this.syncRequired) {
-                syncStatusIcon.textContent = '📱';
-                syncStatusText.textContent = 'Offline - data saved locally';
-            } else {
-                syncStatusIcon.textContent = '🔴';
-                syncStatusText.textContent = 'Database disconnected';
-            }
-        }
-    }
-
     updateUI() {
         const currentEnrolled = this.enrolledParticipants[this.currentSession] || [];
         const currentQueued = this.queuedParticipants[this.currentSession] || [];
@@ -257,6 +303,9 @@ class WorkshopEnrollment {
             queuedList.appendChild(li);
         });
 
+        // Add connection status indicator
+        this.updateConnectionStatus();
+
         // Remove animation class after animation completes
         setTimeout(() => {
             document.querySelectorAll('.new-participant').forEach(element => {
@@ -265,16 +314,49 @@ class WorkshopEnrollment {
         }, 500);
     }
 
+    updateConnectionStatus() {
+        // Add or update connection status in the footer
+        let statusElement = document.getElementById('connectionStatus');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.id = 'connectionStatus';
+            statusElement.style.cssText = 'font-size: 12px; color: #666; margin-top: 5px;';
+            const footer = document.querySelector('footer');
+            footer.appendChild(statusElement);
+        }
+
+        if (this.isDatabaseConnected) {
+            statusElement.innerHTML = '🟢 Connected to database';
+            statusElement.style.color = '#28a745';
+        } else {
+            if (this.syncRequired) {
+                statusElement.innerHTML = '🟡 Offline mode - will sync when connected • Press Ctrl+R to retry';
+            } else {
+                statusElement.innerHTML = '🔴 Database connection failed';
+            }
+            statusElement.style.color = '#dc3545';
+        }
+    }
+
     showMessage(text, type) {
         const messageElement = document.getElementById('enrollmentMessage');
         messageElement.textContent = text;
         messageElement.className = `message ${type}`;
+        messageElement.style.display = 'block'; // Ensure it's visible when showing a message
         
-        // Clear message after 5 seconds
-        setTimeout(() => {
-            messageElement.textContent = '';
-            messageElement.className = 'message';
-        }, 5000);
+        // Add info message style if needed
+        if (type === 'info' && !messageElement.classList.contains('info')) {
+            messageElement.style.cssText = 'background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; display: block;';
+        }
+        
+        // Clear message after 5 seconds (except for persistent info messages)
+        if (type !== 'info') {
+            setTimeout(() => {
+                messageElement.textContent = '';
+                messageElement.className = 'message';
+                messageElement.style.cssText = 'display: none;';
+            }, 5000);
+        }
     }
 
     async saveToDatabase() {
@@ -289,7 +371,6 @@ class WorkshopEnrollment {
                 console.log('💾 Data saved to database successfully');
                 this.syncRequired = false;
                 this.retryAttempts = 0;
-                this.updateSyncStatus();
                 return true;
             } catch (error) {
                 console.error('❌ Failed to save to database:', error);
@@ -306,13 +387,11 @@ class WorkshopEnrollment {
                     this.showMessage('❌ Database unavailable - data saved locally only. Will sync when connection restored.', 'error');
                     this.scheduleReconnectAttempt();
                 }
-                this.updateSyncStatus();
                 return false;
             }
         } else {
             this.syncRequired = true;
             this.showMessage('📱 Data saved locally - will sync to database when connected', 'warning');
-            this.updateSyncStatus();
             return false;
         }
     }
@@ -402,26 +481,45 @@ class WorkshopEnrollment {
         
         if (this.isDatabaseConnected) {
             console.log('🔄 Connection restored, attempting database save...');
-            this.updateSyncStatus();
             await this.saveToDatabase();
         }
+    }
+
+    async attemptDatabaseSync() {
+        if (!this.supabaseClient) return;
+        
+        try {
+            console.log('🔄 Attempting database sync...');
+            const connectionTest = await this.supabaseClient.testConnection();
+            
+            if (connectionTest.connected) {
+                this.isDatabaseConnected = true;
+                console.log('✅ Database connection restored during sync');
+                
+                // Load from database to ensure local storage matches database state
+                const syncSuccess = await this.loadFromDatabase();
+                if (syncSuccess) {
+                    console.log('🔄 Successfully synced with database');
+                    this.updateUI();
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Database sync failed:', error);
+        }
+        
+        return false;
     }
 
     scheduleReconnectAttempt() {
         // Try to reconnect every 30 seconds if we have unsaved data
         if (this.syncRequired) {
             setTimeout(async () => {
-                if (this.supabaseClient) {
-                    const connectionTest = await this.supabaseClient.testConnection();
-                    if (connectionTest.connected && !this.isDatabaseConnected) {
-                        this.isDatabaseConnected = true;
-                        console.log('🔄 Database connection restored');
-                        this.updateSyncStatus();
-                        await this.syncLocalStorageToDatabase();
-                    } else if (this.syncRequired) {
-                        // Keep trying if we still have unsaved data
-                        this.scheduleReconnectAttempt();
-                    }
+                const syncSuccess = await this.attemptDatabaseSync();
+                
+                if (!syncSuccess && this.syncRequired) {
+                    // Keep trying if sync failed and we still have unsaved data
+                    this.scheduleReconnectAttempt();
                 }
             }, 30000); // 30 seconds
         }
@@ -429,6 +527,7 @@ class WorkshopEnrollment {
 
     async syncLocalStorageToDatabase() {
         if (!this.isDatabaseConnected || !this.syncRequired) {
+            console.log('🔄 Sync skipped - not connected or not required');
             return false;
         }
 
@@ -448,34 +547,43 @@ class WorkshopEnrollment {
                 const dbEnrolled = dbData.enrolled[sessionId] || [];
                 const dbQueued = dbData.queued[sessionId] || [];
                 
+                console.log(`📊 Session ${sessionId} comparison:`, {
+                    localEnrolled: localEnrolled.length,
+                    dbEnrolled: dbEnrolled.length,
+                    localQueued: localQueued.length, 
+                    dbQueued: dbQueued.length
+                });
+                
                 // Simple comparison - if counts differ or participants differ, we need to sync
                 if (localEnrolled.length !== dbEnrolled.length || 
                     localQueued.length !== dbQueued.length ||
                     !this.arraysEqual(localEnrolled, dbEnrolled) ||
                     !this.arraysEqual(localQueued, dbQueued)) {
                     needsSync = true;
+                    console.log(`🔄 Session ${sessionId} needs sync`);
                     break;
                 }
             }
             
             if (needsSync) {
+                console.log('🔄 Syncing localStorage data to database...');
                 // Merge the data (localStorage takes precedence for newer entries)
                 await this.supabaseClient.saveEnrolledParticipants(this.enrolledParticipants);
                 await this.supabaseClient.saveQueuedParticipants(this.queuedParticipants);
                 console.log('✅ Successfully synced localStorage data to database');
-                this.showMessage('📡 Local data synchronized to database successfully', 'success');
                 this.syncRequired = false;
-                this.updateSyncStatus();
                 return true;
             } else {
                 console.log('ℹ️ No sync needed - data already matches');
                 this.syncRequired = false;
-                this.updateSyncStatus();
                 return true;
             }
         } catch (error) {
             console.error('❌ Failed to sync localStorage to database:', error);
-            this.showMessage('❌ Failed to sync data to database', 'error');
+            // Don't change connection status - sync errors shouldn't affect connection
+            this.showMessage('❌ Failed to sync data to database - will retry later', 'warning');
+            // Schedule retry but don't mark connection as failed
+            setTimeout(() => this.syncLocalStorageToDatabase(), 10000); // Retry in 10 seconds
             return false;
         }
     }
@@ -528,18 +636,38 @@ class WorkshopEnrollment {
     async debugConnection() {
         console.log('🔍 Starting debug connection test...');
         
+        // First check if we have the basic requirements
+        console.log('📊 Debug - Checking prerequisites...');
+        console.log('- window.SUPABASE_CONFIG:', !!window.SUPABASE_CONFIG);
+        console.log('- window.supabase:', !!window.supabase);
+        console.log('- this.supabaseClient:', !!this.supabaseClient);
+        
+        if (window.SUPABASE_CONFIG) {
+            console.log('- Supabase URL:', window.SUPABASE_CONFIG.url ? 'SET' : 'MISSING');
+            console.log('- Supabase Key:', window.SUPABASE_CONFIG.key ? 'SET (' + window.SUPABASE_CONFIG.key.substring(0, 10) + '...)' : 'MISSING');
+            console.log('- Environment:', window.SUPABASE_CONFIG.environment);
+        }
+        
         if (!this.supabaseClient) {
             console.error('❌ No Supabase client available');
             return { success: false, error: 'No Supabase client' };
         }
         
         try {
+            // Test basic network connectivity first
+            console.log('🌐 Testing basic network connectivity...');
+            try {
+                const basicTest = await fetch('https://www.google.com/favicon.ico', { method: 'HEAD', mode: 'no-cors' });
+                console.log('✅ Basic internet connectivity: OK');
+            } catch (netError) {
+                console.warn('⚠️ Basic internet connectivity failed:', netError.message);
+            }
+            
             const result = await this.supabaseClient.testConnection();
             console.log('📊 Debug connection result:', result);
             
             if (result.connected) {
                 this.isDatabaseConnected = true;
-                this.updateSyncStatus();
                 console.log('✅ Connection restored via debug test');
                 return { success: true, message: 'Connection successful' };
             } else {
