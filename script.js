@@ -40,12 +40,20 @@ class WorkshopEnrollment {
 
     async initializeSupabase() {
         try {
+            console.log('🚀 Initializing Supabase connection...');
+            
             // Initialize Supabase client
             this.supabaseClient = new SupabaseClient();
             
-            // Test connection
+            // Test connection with detailed logging
+            console.log('🔍 Testing database connection...');
             const connectionTest = await this.supabaseClient.testConnection();
             this.isDatabaseConnected = connectionTest.connected;
+            
+            console.log(`📊 Connection test result: ${this.isDatabaseConnected ? 'SUCCESS' : 'FAILED'}`);
+            if (!this.isDatabaseConnected && connectionTest.error) {
+                console.error('❌ Connection error details:', connectionTest.error);
+            }
             
             if (this.isDatabaseConnected) {
                 console.log('✅ Database connection successful');
@@ -64,6 +72,7 @@ class WorkshopEnrollment {
             
         } catch (error) {
             console.error('❌ Supabase initialization failed:', error);
+            console.error('❌ Error stack:', error.stack);
             this.isDatabaseConnected = false;
             this.loadFromStorage();
         }
@@ -514,6 +523,34 @@ class WorkshopEnrollment {
             queuedCount: Object.values(this.queuedParticipants).reduce((sum, arr) => sum + arr.length, 0)
         };
     }
+
+    // Debug function to manually test database connection
+    async debugConnection() {
+        console.log('🔍 Starting debug connection test...');
+        
+        if (!this.supabaseClient) {
+            console.error('❌ No Supabase client available');
+            return { success: false, error: 'No Supabase client' };
+        }
+        
+        try {
+            const result = await this.supabaseClient.testConnection();
+            console.log('📊 Debug connection result:', result);
+            
+            if (result.connected) {
+                this.isDatabaseConnected = true;
+                this.updateSyncStatus();
+                console.log('✅ Connection restored via debug test');
+                return { success: true, message: 'Connection successful' };
+            } else {
+                console.log('❌ Connection still failing:', result.error);
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('❌ Debug connection error:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 // Initialize the application when the DOM is loaded
@@ -544,9 +581,12 @@ Admin commands available in console:
 - workshopEnrollment.exportData() - Export current data
 - workshopEnrollment.forceSyncToDatabase() - Force sync localStorage to database
 - workshopEnrollment.getSyncStatus() - Check sync and connection status
+- workshopEnrollment.debugConnection() - Debug database connection issues
 - workshopEnrollment.enrolledParticipants - View enrolled participants
 - workshopEnrollment.queuedParticipants - View queued participants
 
 Database Status: ${window.workshopEnrollment ? (window.workshopEnrollment.isDatabaseConnected ? '🟢 Connected' : '🔴 Disconnected') : '⏳ Initializing...'}
 Sync Required: ${window.workshopEnrollment ? (window.workshopEnrollment.syncRequired ? '🟡 Yes' : '🟢 No') : '⏳ Checking...'}
+
+💡 If showing offline when online, try: workshopEnrollment.debugConnection()
 `);

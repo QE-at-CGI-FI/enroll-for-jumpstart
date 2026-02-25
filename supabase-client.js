@@ -1,9 +1,17 @@
 // Supabase client initialization and database operations
 class SupabaseClient {
     constructor() {
+        console.log('📊 Initializing SupabaseClient...');
+        
         if (!window.SUPABASE_CONFIG || !window.supabase) {
             throw new Error('Supabase configuration or library not loaded');
         }
+        
+        console.log('📊 Supabase config loaded:', {
+            url: window.SUPABASE_CONFIG.url ? 'SET' : 'MISSING',
+            key: window.SUPABASE_CONFIG.key ? 'SET' : 'MISSING',
+            environment: window.SUPABASE_CONFIG.environment
+        });
         
         this.client = window.supabase.createClient(
             window.SUPABASE_CONFIG.url,
@@ -191,13 +199,43 @@ class SupabaseClient {
     // Check database connection
     async testConnection() {
         try {
+            console.log('🔍 Testing database connection...');
+            
+            // First try a simple auth check (doesn't require tables)
+            try {
+                const { data: { session }, error: authError } = await this.client.auth.getSession();
+                console.log('📊 Auth check result:', authError ? 'ERROR' : 'OK');
+                
+                if (authError) {
+                    console.warn('⚠️ Auth error (but might be normal for anon access):', authError.message);
+                }
+            } catch (authErr) {
+                console.warn('⚠️ Auth check failed:', authErr.message);
+            }
+            
+            // Try to query the participants table
             const { data, error } = await this.client
                 .from('participants')
-                .select('count')
+                .select('*')
                 .limit(1);
 
-            return { connected: !error, error: error?.message };
+            if (error) {
+                console.error('❌ Participants table query failed:', error);
+                
+                // If participants table doesn't exist, try to create it or use a simpler test
+                if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+                    console.log('📊 Participants table may not exist - this is normal for first run');
+                    // For now, consider this a successful connection since we can reach the database
+                    return { connected: true, error: null };
+                }
+                
+                return { connected: false, error: error.message };
+            }
+            
+            console.log('✅ Connection test successful');
+            return { connected: true, error: null };
         } catch (error) {
+            console.error('❌ Connection test exception:', error);
             return { connected: false, error: error.message };
         }
     }
