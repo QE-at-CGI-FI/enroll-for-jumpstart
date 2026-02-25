@@ -233,11 +233,14 @@ main {
 }
 
 .message {
-    margin-top: 15px;
-    padding: 12px;
     border-radius: 8px;
     font-weight: 600;
     text-align: center;
+}
+
+.message:not(:empty) {
+    margin-top: 15px;
+    padding: 12px;
 }
 
 .message.success {
