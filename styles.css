@@ -131,6 +131,10 @@ header h1 {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    text-align: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    -webkit-justify-content: center;
 }
 
 .info-icon {
