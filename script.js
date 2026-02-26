@@ -81,6 +81,7 @@ class WorkshopEnrollment {
         }
         
         this.initializeEventListeners();
+        this.initializeOverlay();
         this.updateUI();
     }
 
@@ -138,6 +139,63 @@ class WorkshopEnrollment {
         
         // Initialize with default session
         this.updateSessionDetails();
+    }
+    
+    initializeOverlay() {
+        const infoButton = document.getElementById('infoButton');
+        const closeOverlay = document.getElementById('closeOverlay');
+        const overlay = document.getElementById('infoOverlay');
+        
+        if (infoButton) {
+            infoButton.addEventListener('click', () => this.showOverlay());
+        }
+        
+        if (closeOverlay) {
+            closeOverlay.addEventListener('click', () => this.hideOverlay());
+        }
+        
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this.hideOverlay();
+                }
+            });
+        }
+        
+        // Handle ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('active')) {
+                this.hideOverlay();
+            }
+        });
+    }
+    
+    showOverlay() {
+        const overlay = document.getElementById('infoOverlay');
+        if (overlay) {
+            overlay.classList.add('active');
+            // Prevent scrolling of background
+            document.body.style.overflow = 'hidden';
+            // Focus management for accessibility
+            const closeButton = document.getElementById('closeOverlay');
+            if (closeButton) {
+                closeButton.focus();
+            }
+        }
+    }
+    
+    hideOverlay() {
+        const overlay = document.getElementById('infoOverlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            // Restore scrolling
+            document.body.style.overflow = '';
+            // Return focus to info button
+            const infoButton = document.getElementById('infoButton');
+            if (infoButton) {
+                infoButton.focus();
+            }
+        }
     }
 
     async forceDatabaseSync() {
