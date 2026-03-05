@@ -119,8 +119,8 @@ class SupabaseClient {
             if (error) throw error;
 
             // Group participants by session and status
-            const enrolled = { session1: [], session2: [] };
-            const queued = { session1: [], session2: [] };
+            const enrolled = { session1: [], session2: [], session3: [], session4: [], session5: [] };
+            const queued = { session1: [], session2: [], session3: [], session4: [], session5: [] };
 
             data.forEach(p => {
                 const participant = {
@@ -133,13 +133,11 @@ class SupabaseClient {
                 const sessionId = p.session_id || 'session1';
                 
                 if (p.status === 'enrolled') {
-                    if (enrolled[sessionId]) {
-                        enrolled[sessionId].push(participant);
-                    }
+                    if (!enrolled[sessionId]) enrolled[sessionId] = [];
+                    enrolled[sessionId].push(participant);
                 } else if (p.status === 'queued') {
-                    if (queued[sessionId]) {
-                        queued[sessionId].push(participant);
-                    }
+                    if (!queued[sessionId]) queued[sessionId] = [];
+                    queued[sessionId].push(participant);
                 }
             });
 
