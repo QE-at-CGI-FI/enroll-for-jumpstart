@@ -26,14 +26,35 @@ class WorkshopEnrollment {
                 time: '13:30 - 15:30',
                 location: 'Karvaamokuja',
                 capacity: 8
+            },
+            session3: {
+                id: 'session3',
+                date: 'March 20, 2026',
+                time: '14:00 - 16:00',
+                location: 'Online',
+                capacity: 8
+            },
+            session4: {
+                id: 'session4',
+                date: 'March 30, 2026',
+                time: '13:00 - 15:00',
+                location: 'Online',
+                capacity: 8
+            },
+            session5: {
+                id: 'session5',
+                date: 'March 31, 2026',
+                time: '8:00 - 10:00',
+                location: 'Online',
+                capacity: 8
             }
         };
         
         // Initialize participant lists for each session
-        this.enrolledParticipants.session1 = [];
-        this.enrolledParticipants.session2 = [];
-        this.queuedParticipants.session1 = [];
-        this.queuedParticipants.session2 = [];
+        for (const sessionId of Object.keys(this.sessions)) {
+            this.enrolledParticipants[sessionId] = [];
+            this.queuedParticipants[sessionId] = [];
+        }
         
         this.initializeSupabase();
     }
@@ -92,16 +113,20 @@ class WorkshopEnrollment {
             if (Array.isArray(data.enrolled)) {
                 // Old format - migrate to session1
                 this.enrolledParticipants.session1 = data.enrolled || [];
-                this.enrolledParticipants.session2 = [];
                 this.queuedParticipants.session1 = data.queued || [];
-                this.queuedParticipants.session2 = [];
+                for (const sid of Object.keys(this.sessions)) {
+                    if (sid !== 'session1') {
+                        this.enrolledParticipants[sid] = [];
+                        this.queuedParticipants[sid] = [];
+                    }
+                }
             } else {
                 // New format with sessions
-                this.enrolledParticipants = data.enrolled || { session1: [], session2: [] };
-                this.queuedParticipants = data.queued || { session1: [], session2: [] };
+                this.enrolledParticipants = data.enrolled || this._emptySessionLists();
+                this.queuedParticipants = data.queued || this._emptySessionLists();
             }
-            const totalEnrolled = (this.enrolledParticipants.session1?.length || 0) + (this.enrolledParticipants.session2?.length || 0);
-            const totalQueued = (this.queuedParticipants.session1?.length || 0) + (this.queuedParticipants.session2?.length || 0);
+            const totalEnrolled = Object.values(this.enrolledParticipants).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+            const totalQueued = Object.values(this.queuedParticipants).reduce((sum, arr) => sum + (arr?.length || 0), 0);
             console.log(`📊 Loaded ${totalEnrolled} enrolled and ${totalQueued} queued participants from database`);
             
             // Always overwrite localStorage with database contents (including empty state)
@@ -217,8 +242,8 @@ class WorkshopEnrollment {
 
     clearLocalStorage() {
         console.log('🗑️ Clearing local storage to match empty database');
-        this.enrolledParticipants = { session1: [], session2: [] };
-        this.queuedParticipants = { session1: [], session2: [] };
+        this.enrolledParticipants = this._emptySessionLists();
+        this.queuedParticipants = this._emptySessionLists();
         this.saveToStorage();
         this.updateUI();
     }
@@ -456,8 +481,8 @@ class WorkshopEnrollment {
 
     async clearAllData() {
         if (confirm('Are you sure you want to clear all enrollment data? This cannot be undone.')) {
-            this.enrolledParticipants = { session1: [], session2: [] };
-            this.queuedParticipants = { session1: [], session2: [] };
+            this.enrolledParticipants = this._emptySessionLists();
+            this.queuedParticipants = this._emptySessionLists();
             
             // Clear from database
             if (this.isDatabaseConnected && this.supabaseClient) {
@@ -499,22 +524,22 @@ class WorkshopEnrollment {
             
             // Handle migration from old format (array) to new format (object with sessions)
             if (Array.isArray(enrolled)) {
-                this.enrolledParticipants = { session1: enrolled, session2: [] };
+                this.enrolledParticipants = { session1: enrolled };
             } else {
                 this.enrolledParticipants = enrolled;
             }
             
             if (Array.isArray(queued)) {
-                this.queuedParticipants = { session1: queued, session2: [] };
+                this.queuedParticipants = { session1: queued };
             } else {
                 this.queuedParticipants = queued;
             }
             
             // Ensure all sessions exist
-            if (!this.enrolledParticipants.session1) this.enrolledParticipants.session1 = [];
-            if (!this.enrolledParticipants.session2) this.enrolledParticipants.session2 = [];
-            if (!this.queuedParticipants.session1) this.queuedParticipants.session1 = [];
-            if (!this.queuedParticipants.session2) this.queuedParticipants.session2 = [];
+            for (const sid of Object.keys(this.sessions)) {
+                if (!this.enrolledParticipants[sid]) this.enrolledParticipants[sid] = [];
+                if (!this.queuedParticipants[sid]) this.queuedParticipants[sid] = [];
+            }
             
             // Check if we have local data that might need syncing
             const hasLocalData = Object.values(this.enrolledParticipants).some(arr => arr.length > 0) || 
@@ -525,8 +550,8 @@ class WorkshopEnrollment {
             }
         } catch (error) {
             console.error('Error loading from localStorage:', error);
-            this.enrolledParticipants = { session1: [], session2: [] };
-            this.queuedParticipants = { session1: [], session2: [] };
+            this.enrolledParticipants = this._emptySessionLists();
+            this.queuedParticipants = this._emptySessionLists();
         }
     }
 
@@ -599,7 +624,7 @@ class WorkshopEnrollment {
             let needsSync = false;
             
             // Check each session for differences
-            for (const sessionId of ['session1', 'session2']) {
+            for (const sessionId of Object.keys(this.sessions)) {
                 const localEnrolled = this.enrolledParticipants[sessionId] || [];
                 const localQueued = this.queuedParticipants[sessionId] || [];
                 const dbEnrolled = dbData.enrolled[sessionId] || [];
@@ -654,6 +679,14 @@ class WorkshopEnrollment {
                 item1.session === item2.session
             )
         );
+    }
+
+    _emptySessionLists() {
+        const lists = {};
+        for (const sid of Object.keys(this.sessions)) {
+            lists[sid] = [];
+        }
+        return lists;
     }
 
     // Admin function to force sync localStorage to database
