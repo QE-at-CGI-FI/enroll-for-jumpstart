@@ -206,62 +206,8 @@ class SupabaseClient {
             console.log('🔍 Testing database connection...');
             console.log('🔍 Supabase URL:', window.SUPABASE_CONFIG.url);
             console.log('🔍 API Key (first 20 chars):', window.SUPABASE_CONFIG.key.substring(0, 20) + '...');
-            
-            // Test basic Supabase connectivity first
-            console.log('📊 Testing basic Supabase connectivity...');
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-            
-            try {
-                const basicResponse = await fetch(`${window.SUPABASE_CONFIG.url}/rest/v1/`, {
-                    method: 'HEAD',
-                    headers: {
-                        'apikey': window.SUPABASE_CONFIG.key,
-                        'Authorization': `Bearer ${window.SUPABASE_CONFIG.key}`
-                    },
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                console.log('📊 Basic connectivity response status:', basicResponse.status);
-                
-                if (basicResponse.status === 401) {
-                    console.error('❌ Authentication failed: Invalid API key or insufficient permissions');
-                    return { connected: false, error: 'Invalid API key: 401' };
-                }
-                
-                if (basicResponse.status === 404) {
-                    console.error('❌ Project not found: Invalid Supabase URL');
-                    return { connected: false, error: 'Invalid Supabase URL: 404' };
-                }
-                
-                if (!basicResponse.ok && basicResponse.status >= 400) {
-                    console.error('❌ Supabase API error:', basicResponse.status, basicResponse.statusText);
-                    return { connected: false, error: `API error: ${basicResponse.status} ${basicResponse.statusText}` };
-                }
-                
-                console.log('✅ Basic Supabase API connectivity successful');
-            } catch (fetchError) {
-                clearTimeout(timeoutId);
-                console.error('❌ Network connectivity test failed:', fetchError.message);
-                
-                if (fetchError.name === 'AbortError') {
-                    console.error('❌ Request timed out after 10 seconds');
-                    return { connected: false, error: 'Connection timeout - check your network and Supabase URL' };
-                }
-                
-                if (fetchError.message.includes('Failed to fetch') || 
-                    fetchError.message.includes('NetworkError') ||
-                    fetchError.message.includes('CORS')) {
-                    console.error('❌ Network/CORS error - trying direct Supabase client instead');
-                    // Fall through to try the Supabase client method
-                } else {
-                    return { connected: false, error: `Network error: ${fetchError.message}` };
-                }
-            }
-            
-            // Now try the participants table query
+
+            // Try the participants table query
             const { data, error } = await this.client
                 .from('participants')
                 .select('*')
