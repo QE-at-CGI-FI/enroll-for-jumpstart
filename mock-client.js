@@ -35,45 +35,11 @@ class SupabaseClient {
         });
 
         return [
-            // Session 1 – March 11 – fully enrolled + 2 queued
-            make('Test User One',    'enrolled', 'session1', 25, 8),
-            make('Test User Two',    'enrolled', 'session1', 24, 7),
-            make('Test User Three',  'enrolled', 'session1', 23, 6),
-            make('Test User Four',   'enrolled', 'session1', 22, 5),
-            make('Test User Five',   'enrolled', 'session1', 21, 4),
-            make('Test User Six',    'enrolled', 'session1', 20, 3),
-            make('Test User Seven',  'enrolled', 'session1', 19, 2),
-            make('Test User Eight',  'enrolled', 'session1', 18, 1),
-            make('Test User Nine',   'queued',   'session1', 17, 0),
-            make('Test User Ten',    'queued',   'session1', 16, 0),
-
-            // Session 2 – March 26 – partially enrolled
-            make('Test User Eleven',   'enrolled', 'session2', 15, 6),
-            make('Test User Twelve',   'enrolled', 'session2', 14, 5),
-            make('Test User Thirteen', 'enrolled', 'session2', 13, 4),
-            make('Test User Fourteen', 'enrolled', 'session2', 12, 3),
-            make('Test User Fifteen',  'enrolled', 'session2', 11, 2),
-            make('Test User Sixteen',  'enrolled', 'session2', 10, 1),
-
-            // Session 3 – March 20 – fully enrolled
-            make('Test User Seventeen', 'enrolled', 'session3', 20, 8),
-            make('Test User Eighteen',  'enrolled', 'session3', 19, 7),
-            make('Test User Nineteen',  'enrolled', 'session3', 18, 6),
-            make('Test User Twenty',    'enrolled', 'session3', 17, 5),
-            make('Test User TwentyOne', 'enrolled', 'session3', 16, 4),
-            make('Test User TwentyTwo', 'enrolled', 'session3', 15, 3),
-            make('Test User TwentyThree', 'enrolled', 'session3', 14, 2),
-            make('Test User TwentyFour',  'enrolled', 'session3', 13, 1),
-
-            // Session 4 – March 30 – partially enrolled
-            make('Test User TwentyFive', 'enrolled', 'session4', 5, 4),
-            make('Test User TwentySix',  'enrolled', 'session4', 4, 3),
-            make('Test User TwentySeven','enrolled', 'session4', 3, 2),
-            make('Test User TwentyEight','enrolled', 'session4', 2, 1),
-
-            // Session 5 – March 31 (today) – just started
-            make('Test User TwentyNine', 'enrolled', 'session5', 0, 3),
-            make('Test User Thirty',     'enrolled', 'session5', 0, 2),
+            // Session 1 – May 6 – partially enrolled
+            make('Test User One',    'enrolled', 'session1', 5, 4),
+            make('Test User Two',    'enrolled', 'session1', 4, 3),
+            make('Test User Three',  'enrolled', 'session1', 3, 2),
+            make('Test User Four',   'enrolled', 'session1', 2, 1),
         ];
     }
 

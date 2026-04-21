@@ -119,8 +119,8 @@ class SupabaseClient {
             if (error) throw error;
 
             // Group participants by session and status
-            const enrolled = { session1: [], session2: [], session3: [], session4: [], session5: [] };
-            const queued = { session1: [], session2: [], session3: [], session4: [], session5: [] };
+            const enrolled = { session1: [] };
+            const queued = { session1: [] };
 
             data.forEach(p => {
                 const participant = {

@@ -39,6 +39,3 @@ CREATE POLICY "Public can delete participants" ON participants
 -- Insert sample data (optional - remove if not needed)
 -- INSERT INTO participants (name, status, timestamp, participant_id, session_id) VALUES
 -- ('Test User', 'enrolled', NOW(), 'test123', 'session1');
-
--- Show table structure
-\d participants;

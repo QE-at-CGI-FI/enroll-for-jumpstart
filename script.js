@@ -15,36 +15,8 @@ class WorkshopEnrollment {
         this.sessions = {
             session1: {
                 id: 'session1',
-                date: 'March 11, 2026',
+                date: 'May 6, 2026',
                 time: '13:00 - 15:00',
-                location: 'Online',
-                capacity: 8
-            },
-            session2: {
-                id: 'session2',
-                date: 'March 26, 2026',
-                time: '13:30 - 15:30',
-                location: 'Karvaamokuja',
-                capacity: 8
-            },
-            session3: {
-                id: 'session3',
-                date: 'March 20, 2026',
-                time: '14:00 - 16:00',
-                location: 'Online',
-                capacity: 8
-            },
-            session4: {
-                id: 'session4',
-                date: 'March 30, 2026',
-                time: '13:00 - 15:00',
-                location: 'Online',
-                capacity: 8
-            },
-            session5: {
-                id: 'session5',
-                date: 'March 31, 2026',
-                time: '8:00 - 10:00',
                 location: 'Online',
                 capacity: 8
             }
