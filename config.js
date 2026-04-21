@@ -3,8 +3,8 @@ const ENVIRONMENT = 'production';
 
 const CONFIG = {
     production: {
-        supabaseUrl: 'https://crpkvgdvwhdvtwgirvuu.supabase.co',
-        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycGt2Z2R2d2hkdnR3Z2lydnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzY4OTEsImV4cCI6MjA4NzYxMjg5MX0.Jrx-XRAsrr5srpRH8cVAKuUi0LOETbEBUYZl5aahob4'
+        supabaseUrl: 'https://owkbknhiucwzyjyqewwb.supabase.co',
+        supabaseKey: 'sb_publishable_q5IA1-hcgQK7gda7EGtwDw_ssQ4ky-8'
     }
 };
 
